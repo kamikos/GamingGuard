@@ -74,7 +74,7 @@ namespace GamingGuard
                 User owner = GetUserByDiscordId(Message.Author.User.Id);
                 if (owner is null)
                 {
-                    owner = new DB.User() { DiscordId = Message.Author.User.Id, allowedAccounts =  new List<ObjectId>(), ownedAccounts = new List<ObjectId>() };
+                    owner = new DB.User() { DiscordId = Message.Author.User.Id, allowedAccounts = new List<ObjectId>(), ownedAccounts = new List<ObjectId>() };
                     AddUserToDb(owner);
                 }
 
@@ -169,7 +169,8 @@ namespace GamingGuard
                 {
                     foreach (DiscordUser discordUser in Message.Mentions)
                     {
-                        User user = new User() { DiscordId = discordUser.Id };
+                        User user = new User() { DiscordId = discordUser.Id, allowedAccounts = new List<ObjectId>(), ownedAccounts = new List<ObjectId>() };
+                        AddUserToDb(user);
                         AddToAllowedLlist(user, acc);
                         acc.allowedUsers.Add(user);
                     }
@@ -181,8 +182,11 @@ namespace GamingGuard
                     {
                         User user = new User()
                         {
-                            DiscordId = Convert.ToUInt64(users)
+                            DiscordId = Convert.ToUInt64(users),
+                            allowedAccounts = new List<ObjectId>(),
+                            ownedAccounts = new List<ObjectId>()
                         };
+                        AddUserToDb(user);
                         acc.allowedUsers.Add(user);
                         UpdateAccountInDb(acc);
                         AddToAllowedLlist(user, acc);
@@ -251,7 +255,7 @@ namespace GamingGuard
                     };
                     StringBuilder owned = new StringBuilder();
                     User user = GetUserByDiscordId(Message.Author.User.Id);
-                    if (user is null || user.ownedAccounts.Count== 0)
+                    if (user is null || user.ownedAccounts.Count == 0)
                     {
                         embed.AddField("Owned accounts", $"None use `{prefix}add [accountName] [guardSecret]` to add yours");
                     }
