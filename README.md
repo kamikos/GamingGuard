@@ -6,5 +6,5 @@ On first run program will create `token.txt` and open it for you in notepad, pas
 Default prefix is `guard!`<br>
 you can change it by creating `prefix.txt` file and puting your prefix inside<br>
 
-#todo
+# todo
 Console logging when a user uses a command ex User#9999 used get in <servername>
