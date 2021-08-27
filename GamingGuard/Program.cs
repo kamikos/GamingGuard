@@ -71,7 +71,13 @@ namespace GamingGuard
                     return;
                 }
                 steamGuardAccount.GenerateSteamGuardCode();
-                DB.User owner = new DB.User() { DiscordId = Message.Author.User.Id };
+                User owner = GetUserByDiscordId(Message.Author.User.Id);
+                if (owner is null)
+                {
+                    owner = new DB.User() { DiscordId = Message.Author.User.Id, allowedAccounts =  new List<ObjectId>(), ownedAccounts = new List<ObjectId>() };
+                    AddUserToDb(owner);
+                }
+
                 Account acc = new Account()
                 {
                     Owner = owner,
@@ -81,7 +87,7 @@ namespace GamingGuard
                 };
                 DB.AddAccountToDb(acc);
                 AddToOwnerList(owner, acc);
-                Message.Channel.SendMessage($"Added `{accountName}` to <@{owner.DiscordId}> account`\nUse `{prefix}get {accountName}` to get your steam guard code");
+                Message.Channel.SendMessage($"Added `{accountName}` to <@{owner.DiscordId}> account\nUse `{prefix}get {accountName}` to get your steam guard code");
             }
 
             public override void HandleError(string parameterName, string providedValue, Exception exception)
@@ -245,27 +251,27 @@ namespace GamingGuard
                     };
                     StringBuilder owned = new StringBuilder();
                     User user = GetUserByDiscordId(Message.Author.User.Id);
-                    if (user is null || user.ownedAccounts is null)
+                    if (user is null || user.ownedAccounts.Count== 0)
                     {
                         embed.AddField("Owned accounts", $"None use `{prefix}add [accountName] [guardSecret]` to add yours");
                     }
                     else
                     {
-                        foreach (ObjectId id in GetUserByDiscordId(Message.Author.User.Id).ownedAccounts)
+                        foreach (ObjectId id in user.ownedAccounts)
                         {
                             Account acc = GetAccountById(id);
                             owned.Append(acc.AccountName + "\n");
                         }
                         embed.AddField("Owned accounts", owned.ToString());
                     }
-                    if (user is null || user.allowedAccounts is null)
+                    if (user is null || user.allowedAccounts.Count == 0)
                     {
                         embed.AddField("Allowed to use", $"None ask your freind to `{prefix}allow [accountName] [users to allow mention/id]` to allow you to use their accounts");
                     }
                     else
                     {
                         StringBuilder allowed = new StringBuilder();
-                        foreach (ObjectId id in GetUserByDiscordId(Message.Author.User.Id).allowedAccounts)
+                        foreach (ObjectId id in user.allowedAccounts)
                         {
                             Account acc = GetAccountById(id);
                             allowed.Append(acc.AccountName + "\n");
