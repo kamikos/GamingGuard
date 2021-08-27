@@ -72,14 +72,15 @@ namespace GamingGuard
                 }
                 steamGuardAccount.GenerateSteamGuardCode();
                 DB.User owner = new DB.User() { DiscordId = Message.Author.User.Id  };
-                DB.AddAccountToDb(new DB.Account()
+                Account acc = new Account()
                 {
                     Owner = owner,
                     allowedUsers = new List<DB.User>() { owner },
                     AccountName = accountName,
                     SharedSecret = guardSecret,
-                });
-
+                };
+                DB.AddAccountToDb(acc);
+                AddToOwnerList(owner, acc);
                 Message.Channel.SendMessage($"Added `{accountName}` to <@{owner.DiscordId}> account`\nUse `{prefix}get {accountName}` to get your steam guard code");
             }
 
@@ -162,7 +163,9 @@ namespace GamingGuard
                 {
                     foreach (DiscordUser discordUser in Message.Mentions)
                     {
-                        acc.allowedUsers.Add(new User() { DiscordId = discordUser.Id });
+                        User user = new User() { DiscordId = discordUser.Id };
+                        AddToAllowedLlist(user, acc);
+                        acc.allowedUsers.Add(user);
                     }
                     UpdateAccountInDb(acc);
                 }
@@ -170,8 +173,13 @@ namespace GamingGuard
                 {
                     try
                     {
-                        acc.allowedUsers.Add(new User() { DiscordId = Convert.ToUInt64(users) });
-
+                        User user = new User()
+                        {
+                            DiscordId = Convert.ToUInt64(users)
+                        };
+                        acc.allowedUsers.Add(user);
+                        UpdateAccountInDb(acc);
+                        AddToAllowedLlist(user, acc);
                     }
                     catch
                     {
@@ -203,7 +211,6 @@ namespace GamingGuard
             {
                 public override void Execute()
                 {
-                    Console.WriteLine("SHEEEESHHHH");
                     EmbedMaker embed = new EmbedMaker()
                     {
                         Title = "GamingGuard Help",
@@ -223,6 +230,33 @@ namespace GamingGuard
                         if (cmd.Name == "help") { } else { embed.AddField(Client.CommandHandler.Prefix + cmd.Name + args, $"\n" + cmd.Description); };
 
                     }
+                    Message.Channel.SendMessage("", false, embed);
+                }
+            }
+            [Command("list", "show accounts you have access to")]
+            public class List : CommandBase
+            {
+                public override void Execute()
+                {
+                    EmbedMaker embed = new EmbedMaker()
+                    {
+                        Title = $"{Message.Author.User.Username} list",
+                        Color = Color.White,
+                    };
+                    StringBuilder owned = new StringBuilder();
+                    foreach (ObjectId id in GetUserByDiscordId(Message.Author.User.Id).ownedAccounts)
+                    {
+                        Account acc = GetAccountById(id);
+                        owned.Append(acc.AccountName + "\n");
+                    }
+                    embed.AddField("Owned accounts", owned.ToString());
+                    StringBuilder allowed = new StringBuilder();
+                    foreach (ObjectId id in GetUserByDiscordId(Message.Author.User.Id).allowedAccounts)
+                    {
+                        Account acc = GetAccountById(id);
+                        allowed.Append(acc.AccountName+"\n");
+                    }
+                    embed.AddField("Allowed to use", allowed.ToString());
                     Message.Channel.SendMessage("", false, embed);
                 }
             }
@@ -267,6 +301,14 @@ public class DB
             return col.FindOne(x => x.AccountName == accountName);
         }
     }
+    public static Account GetAccountById(ObjectId id)
+    {
+        using (LiteDatabase db = new LiteDatabase(dbfilename))
+        {
+            ILiteCollection<Account> col = db.GetCollection<Account>("accounts");
+            return col.FindById(id);
+        }
+    }
 
     public static IEnumerable<User> GetAllUsers()
     {
@@ -304,12 +346,21 @@ public class DB
     }
 
 
-    public static void AllowUserToUseAccount(User user,Account account)
+    public static void AddToAllowedLlist(User user,Account account)
     {
         using (LiteDatabase db = new LiteDatabase(dbfilename))
         {
             ILiteCollection<User> col = db.GetCollection<User>("users");
             user.allowedAccounts.Add(account.Id);
+            col.Update(user);
+        }
+    }
+    public static void AddToOwnerList(User user, Account account)
+    {
+        using (LiteDatabase db = new LiteDatabase(dbfilename))
+        {
+            ILiteCollection<User> col = db.GetCollection<User>("users");
+            user.ownedAccounts.Add(account.Id);
             col.Update(user);
         }
     }
