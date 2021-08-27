@@ -71,7 +71,7 @@ namespace GamingGuard
                     return;
                 }
                 steamGuardAccount.GenerateSteamGuardCode();
-                DB.User owner = new DB.User() { DiscordId = Message.Author.User.Id  };
+                DB.User owner = new DB.User() { DiscordId = Message.Author.User.Id };
                 Account acc = new Account()
                 {
                     Owner = owner,
@@ -244,19 +244,34 @@ namespace GamingGuard
                         Color = Color.White,
                     };
                     StringBuilder owned = new StringBuilder();
-                    foreach (ObjectId id in GetUserByDiscordId(Message.Author.User.Id).ownedAccounts)
+                    User user = GetUserByDiscordId(Message.Author.User.Id);
+                    if (user is null || user.ownedAccounts is null)
                     {
-                        Account acc = GetAccountById(id);
-                        owned.Append(acc.AccountName + "\n");
+                        embed.AddField("Owned accounts", $"None use `{prefix}add [accountName] [guardSecret]` to add yours");
                     }
-                    embed.AddField("Owned accounts", owned.ToString());
-                    StringBuilder allowed = new StringBuilder();
-                    foreach (ObjectId id in GetUserByDiscordId(Message.Author.User.Id).allowedAccounts)
+                    else
                     {
-                        Account acc = GetAccountById(id);
-                        allowed.Append(acc.AccountName+"\n");
+                        foreach (ObjectId id in GetUserByDiscordId(Message.Author.User.Id).ownedAccounts)
+                        {
+                            Account acc = GetAccountById(id);
+                            owned.Append(acc.AccountName + "\n");
+                        }
+                        embed.AddField("Owned accounts", owned.ToString());
                     }
-                    embed.AddField("Allowed to use", allowed.ToString());
+                    if (user is null || user.allowedAccounts is null)
+                    {
+                        embed.AddField("Allowed to use", $"None ask your freind to `{prefix}allow [accountName] [users to allow mention/id]` to allow you to use their accounts");
+                    }
+                    else
+                    {
+                        StringBuilder allowed = new StringBuilder();
+                        foreach (ObjectId id in GetUserByDiscordId(Message.Author.User.Id).allowedAccounts)
+                        {
+                            Account acc = GetAccountById(id);
+                            allowed.Append(acc.AccountName + "\n");
+                        }
+                        embed.AddField("Allowed to use", allowed.ToString());
+                    }
                     Message.Channel.SendMessage("", false, embed);
                 }
             }
@@ -346,7 +361,7 @@ public class DB
     }
 
 
-    public static void AddToAllowedLlist(User user,Account account)
+    public static void AddToAllowedLlist(User user, Account account)
     {
         using (LiteDatabase db = new LiteDatabase(dbfilename))
         {
