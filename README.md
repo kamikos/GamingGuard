@@ -8,3 +8,5 @@ you can change it by creating `prefix.txt` file and puting your prefix inside<br
 
 # todo
 Console logging when a user uses a command ex User#9999 used get in <servername>
+Better readme with commands
+Confirmation managment
