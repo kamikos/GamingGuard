@@ -117,18 +117,24 @@ namespace GamingGuard
             {
                 Account acc = DB.GetAccountByName(accountName);
                 try
-                {
-                    acc.allowedUsers.Contains(GetUserByDiscordId(Message.Author.User.Id));
+                 {
+                if (acc.allowedUsers.Where(x => x.DiscordId == Message.Author.User.Id).ToList().Count > 0)
+                    {
+                        SteamGuardAccount steamGuardAccount = new SteamGuardAccount();
+                        steamGuardAccount.SharedSecret = acc.SharedSecret;
+                        EmbedMaker embed = new EmbedMaker() { Description = $"Your steam guard code: {steamGuardAccount.GenerateSteamGuardCode()}" };
+                        Message.Channel.SendMessage("", false, embed);
+                    }
+                    else
+                    {
+                        Message.Channel.SendMessage("You don't have permission to use this account");
+                    }
                 }
                 catch (Exception ex)
                 {
                     Message.Channel.SendMessage("You don't have permission to use this account");
                     return;
                 }
-                SteamGuardAccount steamGuardAccount = new SteamGuardAccount();
-                steamGuardAccount.SharedSecret = acc.SharedSecret;
-                EmbedMaker embed = new EmbedMaker() { Description = $"Your steam guard code: {steamGuardAccount.GenerateSteamGuardCode()}" };
-                Message.Channel.SendMessage("", false, embed);
             }
 
             public override void HandleError(string parameterName, string providedValue, Exception exception)
